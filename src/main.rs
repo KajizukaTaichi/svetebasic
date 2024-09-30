@@ -13,7 +13,7 @@ const VERSION: &str = "0.1.0";
 struct Cli {
     /// Script file to be running
     #[arg(index = 1)]
-    file: Option<String>,
+    file: String,
     /// View abstact syntax tree (AST)
     #[arg(long, short)]
     ast: bool,
@@ -22,19 +22,20 @@ struct Cli {
 fn main() {
     let mut scope: HashMap<String, Type> = HashMap::new();
     let cli = Cli::parse();
-    if let Some(path) = cli.file {
-        if let Ok(code) = read_to_string(path) {
-            if cli.ast {
-                println!("{:#?}", parse_program(code).unwrap())
-            } else {
-                run_program(code.to_string(), &mut scope);
-            }
+
+    if let Ok(code) = read_to_string(cli.file) {
+        if cli.ast {
+            println!("{:#?}", parse_program(code).unwrap_or_default())
+        } else {
+            run_program(code.to_string(), &mut scope);
         }
+    } else {
+        eprintln!("Error! opening file is fault");
     }
 }
 
 fn run_program(source: String, scope: &mut HashMap<String, Type>) {
-    let program = parse_program(source).unwrap();
+    let program = parse_program(source).unwrap_or_default();
     run_block(program, scope);
 }
 
