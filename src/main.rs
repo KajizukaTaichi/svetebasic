@@ -5,11 +5,16 @@ fn main() {
     let mut scope: HashMap<String, Type> = HashMap::new();
     run_program(
         r#"
-Let x = 0
-If x Then
-    Print "Ok!"
+Let x = 1
+If x  Then
+    If x Then
+        Print "Ok!"
+    Else
+        Print "No!"
+    End
 Else
-    Print "No!"
+    Print "Hentai!"
+    Print "Senpai!"
 End
         "#
         .to_string(),
@@ -18,25 +23,30 @@ End
 }
 
 fn run_program(source: String, scope: &mut HashMap<String, Type>) {
-    run_block(parse_program(source).unwrap(), scope);
+    let program = parse_program(source).unwrap();
+    dbg!(&program);
+    run_block(program, scope);
 }
 
 fn run_block(block: Block, scope: &mut HashMap<String, Type>) {
     for mut line in block {
-        dbg!(&line, &scope);
         line.run(scope);
     }
 }
 
 fn parse_program(source: String) -> Option<Block> {
     let mut result: Block = vec![];
-    let mut block: Block = vec![];
+    let mut block: String = String::new();
     let mut nest = 0;
     let mut temp: Option<Statement> = None;
     let mut is_else = false;
 
     for line in source.split("\n") {
         let mut line = line.trim().to_string();
+        if line.is_empty() {
+            continue;
+        }
+
         if nest == 0 {
             if line.starts_with("Print") {
                 line = line.replacen("Print", "", 1);
@@ -66,32 +76,55 @@ fn parse_program(source: String) -> Option<Block> {
             }
         } else {
             if line == "End".to_string() {
-                match temp.clone()? {
-                    Statement::If(expr, true_code, _) => {
-                        if is_else {
-                            result.push(Statement::If(expr, true_code, Some(block.clone())));
-                        } else {
-                            result.push(Statement::If(expr, block.clone(), None));
+                if nest == 1 {
+                    match temp.clone()? {
+                        Statement::If(expr, true_code, _) => {
+                            if is_else {
+                                result.push(Statement::If(
+                                    expr,
+                                    true_code,
+                                    Some(parse_program(block.clone())?),
+                                ));
+                            } else {
+                                result.push(Statement::If(
+                                    expr,
+                                    parse_program(block.clone())?,
+                                    None,
+                                ));
+                            }
+                            block.clear();
                         }
-                        nest -= 1;
+                        _ => {}
                     }
-                    _ => {}
+                } else {
+                    block += &format!("{line}\n");
                 }
+                nest -= 1;
             } else if line == "Else".to_string() {
-                match temp.clone()? {
-                    Statement::If(expr, _, _) => {
-                        if is_else {
-                            return None;
-                        } else {
-                            temp = Some(Statement::If(expr, block.clone(), None));
+                if nest == 1 {
+                    match temp.clone()? {
+                        Statement::If(expr, _, _) => {
+                            if is_else {
+                                return None;
+                            } else {
+                                temp =
+                                    Some(Statement::If(expr, parse_program(block.clone())?, None));
+                                block.clear();
+                            }
+                            is_else = true;
                         }
-                        is_else = true;
+                        _ => {}
                     }
-                    _ => {}
+                } else {
+                    block += &format!("{line}\n");
                 }
+            } else if line.starts_with("If") && line.ends_with("Then") {
+                nest += 1;
+                block += &format!("{line}\n");
             } else {
-                block.push(parse_program(line)?[0].clone());
+                block += &format!("{line}\n");
             }
+            dbg!(&block);
         }
     }
     Some(result)
