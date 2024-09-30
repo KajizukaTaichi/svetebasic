@@ -8,7 +8,9 @@ fn main() {
 Let i = 0
 While i < 10 Loop
     Let i = i + 1
-    Print i
+    If i % 2 = 0 Then
+        Print i
+    End
 End"#
             .to_string(),
         &mut scope,
@@ -200,7 +202,7 @@ fn tokenize_expr(input: String) -> Option<Vec<String>> {
 fn parse_expr(soruce: String) -> Option<Expr> {
     let tokens: Vec<String> = tokenize_expr(soruce)?;
 
-    let value0 = tokens.get(0)?.trim().to_string();
+    let value0 = tokens.last()?.trim().to_string();
     let value0 = if let Ok(n) = value0.parse::<f64>() {
         Expr::Value(Type::Number(n))
     } else if value0.starts_with('"') && value0.ends_with('"') {
@@ -223,12 +225,19 @@ fn parse_expr(soruce: String) -> Option<Expr> {
         Expr::Value(Type::Symbol(value0))
     };
 
-    if let Some(operator) = tokens.get(1) {
+    if let Some(operator) = {
+        let mut tokens = tokens.clone();
+        tokens.reverse();
+        tokens
+    }
+    .get(1)
+    {
         let operator = match operator.as_str() {
             "+" => Operator::Add,
             "-" => Operator::Sub,
             "*" => Operator::Mul,
             "/" => Operator::Div,
+            "%" => Operator::Mod,
             "=" => Operator::Equal,
             "<" => Operator::LessThan,
             ">" => Operator::GreaterThan,
@@ -236,7 +245,10 @@ fn parse_expr(soruce: String) -> Option<Expr> {
         };
         Some(Expr::Infix(Box::new(Infix {
             operator,
-            values: (value0, parse_expr(tokens.get(2..)?.to_vec().join(" "))?),
+            values: (
+                parse_expr(tokens.get(..tokens.len() - 2)?.to_vec().join(" "))?,
+                value0,
+            ),
         })))
     } else {
         return Some(value0);
@@ -356,6 +368,7 @@ enum Operator {
     Sub,
     Mul,
     Div,
+    Mod,
     Equal,
     LessThan,
     GreaterThan,
@@ -370,6 +383,7 @@ impl Infix {
             Operator::Sub => Type::Number(value0.get_number() - value1.get_number()),
             Operator::Mul => Type::Number(value0.get_number() * value1.get_number()),
             Operator::Div => Type::Number(value0.get_number() / value1.get_number()),
+            Operator::Mod => Type::Number(value0.get_number() % value1.get_number()),
             Operator::Equal => Type::Bool(value0.get_string() == value1.get_string()),
             Operator::LessThan => Type::Bool(value0.get_number() < value1.get_number()),
             Operator::GreaterThan => Type::Bool(value0.get_number() > value1.get_number()),
