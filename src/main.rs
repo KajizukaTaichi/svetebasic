@@ -14,6 +14,9 @@ struct Cli {
     /// Script file to be running
     #[arg(index = 1)]
     file: Option<String>,
+    /// View abstact syntax tree (AST)
+    #[arg(long, short)]
+    ast: bool,
 }
 
 fn main() {
@@ -21,14 +24,17 @@ fn main() {
     let cli = Cli::parse();
     if let Some(path) = cli.file {
         if let Ok(code) = read_to_string(path) {
-            run_program(code.to_string(), &mut scope);
+            if cli.ast {
+                println!("{:#?}", parse_program(code).unwrap())
+            } else {
+                run_program(code.to_string(), &mut scope);
+            }
         }
     }
 }
 
 fn run_program(source: String, scope: &mut HashMap<String, Type>) {
     let program = parse_program(source).unwrap();
-    dbg!(&program);
     run_block(program, scope);
 }
 
@@ -146,7 +152,6 @@ fn parse_program(source: String) -> Option<Block> {
             } else {
                 block += &format!("{line}\n");
             }
-            dbg!(&block);
         }
     }
     Some(result)
