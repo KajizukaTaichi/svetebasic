@@ -1,20 +1,29 @@
-use std::collections::HashMap;
+use clap::Parser;
+use std::{collections::HashMap, fs::read_to_string};
+
+const VERSION: &str = "0.1.0";
+
+#[derive(Parser, Debug)]
+#[command(
+    name = "Svete Basic",
+    version = VERSION,
+    author = "梶塚太智, kajizukataichi@outlook.jp",
+    about = "Basic dialect that support structured programming",
+)]
+struct Cli {
+    /// Script file to be running
+    #[arg(index = 1)]
+    file: Option<String>,
+}
 
 fn main() {
-    println!("Svete Basic");
     let mut scope: HashMap<String, Type> = HashMap::new();
-    run_program(
-        r#"
-Let i = 0
-While i < 10 Loop
-    Let i = i + 1
-    If i % 2 = 0 Then
-        Print i
-    End
-End"#
-            .to_string(),
-        &mut scope,
-    );
+    let cli = Cli::parse();
+    if let Some(path) = cli.file {
+        if let Ok(code) = read_to_string(path) {
+            run_program(code.to_string(), &mut scope);
+        }
+    }
 }
 
 fn run_program(source: String, scope: &mut HashMap<String, Type>) {
