@@ -1,0 +1,7 @@
+Let i = 0
+While i < 10 Loop
+    Let i = i + 1
+    If i % 2 = 0 Then
+        Print i
+    End
+End
