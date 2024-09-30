@@ -1,17 +1,12 @@
-Let i = 0
-While i < 100 Loop
+Print "Hello, world of the Svete Basic!"
+
+Let i = 1
+Let fact = 1
+Let limit = 5
+
+While i < limit Loop
     Let i = i + 1
-    If i % 15 = 0 Then
-        Print "FizzBuzz"
-    Else
-        If i % 3 = 0 Then
-            Print "Fizz"
-        Else
-            If i % 5 = 0 Then
-                Print "Buzz"
-            Else
-                Print i
-            End
-        End
-    End
+    Let fact = i * fact
 End
+
+Print limit & "! = " & fact
