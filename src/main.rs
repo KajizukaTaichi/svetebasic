@@ -256,6 +256,7 @@ fn parse_expr(soruce: String) -> Option<Expr> {
             "=" => Operator::Equal,
             "<" => Operator::LessThan,
             ">" => Operator::GreaterThan,
+            "&" => Operator::Concat,
             _ => return None,
         };
         Some(Expr::Infix(Box::new(Infix {
@@ -387,6 +388,7 @@ enum Operator {
     Equal,
     LessThan,
     GreaterThan,
+    Concat,
 }
 
 impl Infix {
@@ -402,6 +404,7 @@ impl Infix {
             Operator::Equal => Type::Bool(value0.get_string() == value1.get_string()),
             Operator::LessThan => Type::Bool(value0.get_number() < value1.get_number()),
             Operator::GreaterThan => Type::Bool(value0.get_number() > value1.get_number()),
+            Operator::Concat => Type::String(value0.get_string() + &value1.get_string()),
         }
     }
 }
