@@ -5,19 +5,12 @@ fn main() {
     let mut scope: HashMap<String, Type> = HashMap::new();
     run_program(
         r#"
-Let x = 1
-If x  Then
-    If x Then
-        Print "Ok!"
-    Else
-        Print "No!"
-    End
-Else
-    Print "Hentai!"
-    Print "Senpai!"
-End
-        "#
-        .to_string(),
+Let i = 0
+While i < 10 Loop
+    Let i = i + 1
+    Print i
+End"#
+            .to_string(),
         &mut scope,
     );
 }
@@ -65,12 +58,23 @@ fn parse_program(source: String) -> Option<Block> {
                 temp = Some(Statement::If(
                     parse_expr(
                         line.replacen("If", "", 1)
-                            .get(0..line.len() - 6)?
+                            .get(0..line.len() - "IfThen".len())?
                             .trim()
                             .to_string(),
                     )?,
                     vec![],
                     None,
+                ));
+                nest += 1
+            } else if line.starts_with("While") && line.ends_with("Loop") {
+                temp = Some(Statement::While(
+                    parse_expr(
+                        line.replacen("While", "", 1)
+                            .get(0..line.len() - "WhileLoop".len())?
+                            .trim()
+                            .to_string(),
+                    )?,
+                    vec![],
                 ));
                 nest += 1
             }
@@ -92,6 +96,10 @@ fn parse_program(source: String) -> Option<Block> {
                                     None,
                                 ));
                             }
+                            block.clear();
+                        }
+                        Statement::While(expr, _) => {
+                            result.push(Statement::While(expr, parse_program(block.clone())?));
                             block.clear();
                         }
                         _ => {}
@@ -119,6 +127,9 @@ fn parse_program(source: String) -> Option<Block> {
                     block += &format!("{line}\n");
                 }
             } else if line.starts_with("If") && line.ends_with("Then") {
+                nest += 1;
+                block += &format!("{line}\n");
+            } else if line.starts_with("While") && line.ends_with("Loop") {
                 nest += 1;
                 block += &format!("{line}\n");
             } else {
@@ -187,11 +198,7 @@ fn tokenize_expr(input: String) -> Option<Vec<String>> {
 }
 
 fn parse_expr(soruce: String) -> Option<Expr> {
-    let tokens: Vec<String> = {
-        let mut tokens: Vec<String> = tokenize_expr(soruce)?;
-        tokens.reverse();
-        tokens
-    };
+    let tokens: Vec<String> = tokenize_expr(soruce)?;
 
     let value0 = tokens.get(0)?.trim().to_string();
     let value0 = if let Ok(n) = value0.parse::<f64>() {
@@ -222,6 +229,9 @@ fn parse_expr(soruce: String) -> Option<Expr> {
             "-" => Operator::Sub,
             "*" => Operator::Mul,
             "/" => Operator::Div,
+            "=" => Operator::Equal,
+            "<" => Operator::LessThan,
+            ">" => Operator::GreaterThan,
             _ => return None,
         };
         Some(Expr::Infix(Box::new(Infix {
@@ -279,6 +289,7 @@ enum Statement {
     Print(Expr),
     Let(String, Expr),
     If(Expr, Block, Option<Block>),
+    While(Expr, Block),
 }
 
 impl Statement {
@@ -297,6 +308,11 @@ impl Statement {
                     if let Some(code_false) = code_false {
                         run_block(code_false.to_vec(), scope);
                     }
+                }
+            }
+            Statement::While(expr, code) => {
+                while expr.eval(scope.clone()).get_bool() {
+                    run_block(code.to_vec(), scope);
                 }
             }
         }
@@ -340,6 +356,9 @@ enum Operator {
     Sub,
     Mul,
     Div,
+    Equal,
+    LessThan,
+    GreaterThan,
 }
 
 impl Infix {
@@ -351,6 +370,9 @@ impl Infix {
             Operator::Sub => Type::Number(value0.get_number() - value1.get_number()),
             Operator::Mul => Type::Number(value0.get_number() * value1.get_number()),
             Operator::Div => Type::Number(value0.get_number() / value1.get_number()),
+            Operator::Equal => Type::Bool(value0.get_string() == value1.get_string()),
+            Operator::LessThan => Type::Bool(value0.get_number() < value1.get_number()),
+            Operator::GreaterThan => Type::Bool(value0.get_number() > value1.get_number()),
         }
     }
 }
