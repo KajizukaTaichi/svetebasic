@@ -4,7 +4,7 @@ Let i = 1
 Let fact = 1
 Let limit = 5
 
-While i < limit Loop
+While i < limit
     Let i = i + 1
     Let fact = i * fact
 End
