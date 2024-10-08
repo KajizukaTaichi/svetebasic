@@ -72,26 +72,16 @@ fn parse_program(source: String) -> Option<Block> {
                     line.get(0)?.trim().to_string(),
                     parse_expr(line.get(1..)?.join("=").trim().to_string())?,
                 ));
-            } else if line.starts_with("If") && line.ends_with("Then") {
+            } else if line.starts_with("If") {
                 temp = Some(Statement::If(
-                    parse_expr(
-                        line.replacen("If", "", 1)
-                            .get(0..line.len() - "IfThen".len())?
-                            .trim()
-                            .to_string(),
-                    )?,
+                    parse_expr(line.replacen("If", "", 1).trim().to_string())?,
                     vec![],
                     None,
                 ));
                 nest += 1
-            } else if line.starts_with("While") && line.ends_with("Loop") {
+            } else if line.starts_with("While") {
                 temp = Some(Statement::While(
-                    parse_expr(
-                        line.replacen("While", "", 1)
-                            .get(0..line.len() - "WhileLoop".len())?
-                            .trim()
-                            .to_string(),
-                    )?,
+                    parse_expr(line.replacen("While", "", 1).trim().to_string())?,
                     vec![],
                 ));
                 nest += 1
@@ -144,10 +134,10 @@ fn parse_program(source: String) -> Option<Block> {
                 } else {
                     block += &format!("{line}\n");
                 }
-            } else if line.starts_with("If") && line.ends_with("Then") {
+            } else if line.starts_with("If") {
                 nest += 1;
                 block += &format!("{line}\n");
-            } else if line.starts_with("While") && line.ends_with("Loop") {
+            } else if line.starts_with("While") {
                 nest += 1;
                 block += &format!("{line}\n");
             } else {
